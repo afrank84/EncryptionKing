@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 import json
 import os
 import base64
@@ -29,7 +29,7 @@ class PasswordManager:
         self.style.configure("TEntry", font=("Arial", 12), padding=5)
         
         self.load_or_create_salt()
-        self.create_login_screen()
+        self.create_ui()
     
     def load_or_create_salt(self):
         if not os.path.exists(SALT_FILE):
@@ -50,16 +50,18 @@ class PasswordManager:
         )
         return kdf.derive(password.encode())
     
-    def create_login_screen(self):
-        self.clear_screen()
-        frame = ttk.Frame(self.root, padding=20, style="TFrame")
-        frame.pack(expand=True)
+    def create_ui(self):
+        self.main_frame = ttk.Frame(self.root, padding=20)
+        self.main_frame.pack(expand=True, fill=tk.BOTH)
         
-        ttk.Label(frame, text="Enter Master Password:").pack(pady=10)
-        self.password_entry = ttk.Entry(frame, show="*", font=("Arial", 12))
+        self.password_label = ttk.Label(self.main_frame, text="Enter Master Password:")
+        self.password_label.pack(pady=10)
+        
+        self.password_entry = ttk.Entry(self.main_frame, show="*", font=("Arial", 12))
         self.password_entry.pack(pady=5)
         
-        ttk.Button(frame, text="Unlock", command=self.verify_master_password).pack(pady=10)
+        self.unlock_button = ttk.Button(self.main_frame, text="Unlock", command=self.verify_master_password)
+        self.unlock_button.pack(pady=10)
     
     def verify_master_password(self):
         password = self.password_entry.get()
@@ -69,11 +71,50 @@ class PasswordManager:
         self.master_password = password
         self.encryption_key = self.derive_key(password)
         self.load_passwords()
-        self.create_main_screen()
+        self.show_main_menu()
     
-    def clear_screen(self):
-        for widget in self.root.winfo_children():
+    def show_main_menu(self):
+        for widget in self.main_frame.winfo_children():
             widget.destroy()
+        
+        ttk.Button(self.main_frame, text="Add Password", command=self.add_password).pack(pady=10)
+        ttk.Button(self.main_frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
+    
+    def add_password(self):
+        self.passwords["example.com"] = {"username": "user", "password": "pass123"}
+        self.save_passwords()
+        self.show_passwords()
+    
+    def show_passwords(self):
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+        
+        for site, creds in self.passwords.items():
+            sub_frame = ttk.Frame(self.main_frame)
+            sub_frame.pack(pady=5, fill=tk.X)
+            ttk.Label(sub_frame, text=f"{site}: {creds['username']}").pack(side=tk.LEFT)
+            ttk.Button(sub_frame, text="Copy", command=lambda p=creds['password']: self.copy_to_clipboard(p)).pack(side=tk.RIGHT)
+        
+        ttk.Button(self.main_frame, text="Back", command=self.show_main_menu).pack(pady=10)
+    
+    def copy_to_clipboard(self, text):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        self.root.update()
+    
+    def load_passwords(self):
+        if not os.path.exists(DATA_FILE):
+            self.passwords = {}
+        else:
+            with open(DATA_FILE, "r") as f:
+                encrypted_data = f.read()
+                decrypted_json = self.decrypt_data(encrypted_data)
+                self.passwords = json.loads(decrypted_json)
+    
+    def save_passwords(self):
+        encrypted_data = self.encrypt_data(json.dumps(self.passwords))
+        with open(DATA_FILE, "w") as f:
+            f.write(encrypted_data)
     
     def encrypt_data(self, plaintext):
         iv = secrets.token_bytes(12)
@@ -91,50 +132,6 @@ class PasswordManager:
             return decryptor.update(ciphertext) + decryptor.finalize()
         except Exception:
             return "{}"
-    
-    def load_passwords(self):
-        if not os.path.exists(DATA_FILE):
-            self.passwords = {}
-        else:
-            with open(DATA_FILE, "r") as f:
-                encrypted_data = f.read()
-                decrypted_json = self.decrypt_data(encrypted_data)
-                self.passwords = json.loads(decrypted_json)
-    
-    def save_passwords(self):
-        encrypted_data = self.encrypt_data(json.dumps(self.passwords))
-        with open(DATA_FILE, "w") as f:
-            f.write(encrypted_data)
-    
-    def create_main_screen(self):
-        self.clear_screen()
-        frame = ttk.Frame(self.root, padding=20)
-        frame.pack(expand=True)
-        
-        ttk.Button(frame, text="Add Password", command=self.add_password).pack(pady=10)
-        ttk.Button(frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
-    
-    def add_password(self):
-        self.passwords["example.com"] = {"username": "user", "password": "pass123"}
-        self.save_passwords()
-    
-    def show_passwords(self):
-        self.clear_screen()
-        frame = ttk.Frame(self.root, padding=20)
-        frame.pack(expand=True)
-        
-        for site, creds in self.passwords.items():
-            sub_frame = ttk.Frame(frame)
-            sub_frame.pack(pady=5, fill=tk.X)
-            ttk.Label(sub_frame, text=f"{site}: {creds['username']}").pack(side=tk.LEFT)
-            ttk.Button(sub_frame, text="Copy Password", command=lambda p=creds['password']: self.copy_to_clipboard(p)).pack(side=tk.RIGHT)
-        
-        ttk.Button(frame, text="Back", command=self.create_main_screen).pack(pady=10)
-    
-    def copy_to_clipboard(self, text):
-        self.root.clipboard_clear()
-        self.root.clipboard_append(text)
-        self.root.update()
 
 if __name__ == "__main__":
     root = tk.Tk()
