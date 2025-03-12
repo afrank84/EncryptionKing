@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 import json
 import os
 import base64
@@ -81,9 +81,13 @@ class PasswordManager:
         ttk.Button(self.main_frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
     
     def add_password(self):
-        self.passwords["example.com"] = {"username": "user", "password": "pass123"}
-        self.save_passwords()
-        self.show_passwords()
+        site = simpledialog.askstring("New Entry", "Website:")
+        username = simpledialog.askstring("New Entry", "Username:")
+        password = simpledialog.askstring("New Entry", "Password:")
+        if site and username and password:
+            self.passwords[site] = {"username": username, "password": password}
+            self.save_passwords()
+            self.show_passwords()
     
     def show_passwords(self):
         for widget in self.main_frame.winfo_children():
