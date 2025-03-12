@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
 import json
 import os
 import base64
@@ -59,21 +59,11 @@ class PasswordManager:
         self.password_entry = ttk.Entry(frame, show="*", font=("Arial", 12))
         self.password_entry.pack(pady=5)
         
-        show_password_btn = ttk.Button(frame, text="Show", command=self.toggle_password)
-        show_password_btn.pack(pady=5)
-        
         ttk.Button(frame, text="Unlock", command=self.verify_master_password).pack(pady=10)
-    
-    def toggle_password(self):
-        if self.password_entry["show"] == "*":
-            self.password_entry["show"] = ""
-        else:
-            self.password_entry["show"] = "*"
     
     def verify_master_password(self):
         password = self.password_entry.get()
         if not password:
-            messagebox.showerror("Error", "Master password cannot be empty.")
             return
         
         self.master_password = password
@@ -100,7 +90,6 @@ class PasswordManager:
             decryptor = cipher.decryptor()
             return decryptor.update(ciphertext) + decryptor.finalize()
         except Exception:
-            messagebox.showerror("Error", "Failed to decrypt data. Incorrect master password?")
             return "{}"
     
     def load_passwords(self):
@@ -126,13 +115,8 @@ class PasswordManager:
         ttk.Button(frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
     
     def add_password(self):
-        site = simpledialog.askstring("New Entry", "Website:")
-        username = simpledialog.askstring("New Entry", "Username:")
-        password = simpledialog.askstring("New Entry", "Password:")
-        if site and username and password:
-            self.passwords[site] = {"username": username, "password": password}
-            self.save_passwords()
-            messagebox.showinfo("Success", "Password saved successfully.")
+        self.passwords["example.com"] = {"username": "user", "password": "pass123"}
+        self.save_passwords()
     
     def show_passwords(self):
         self.clear_screen()
@@ -151,7 +135,6 @@ class PasswordManager:
         self.root.clipboard_clear()
         self.root.clipboard_append(text)
         self.root.update()
-        messagebox.showinfo("Copied", "Password copied to clipboard.")
 
 if __name__ == "__main__":
     root = tk.Tk()
