@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog
 import json
 import os
 import base64
@@ -18,8 +18,15 @@ class PasswordManager:
     def __init__(self, root):
         self.root = root
         self.root.title("Secure Password Manager")
+        self.root.geometry("400x500")
+        self.root.configure(bg="#1e1e1e")  # Dark background
         self.master_password = None
         self.encryption_key = None
+        
+        self.style = ttk.Style()
+        self.style.configure("TButton", font=("Arial", 12), padding=5, background="#3a3a3a", foreground="white")
+        self.style.configure("TLabel", font=("Arial", 12), background="#1e1e1e", foreground="white")
+        self.style.configure("TEntry", font=("Arial", 12), padding=5)
         
         self.load_or_create_salt()
         self.create_login_screen()
@@ -45,10 +52,23 @@ class PasswordManager:
     
     def create_login_screen(self):
         self.clear_screen()
-        tk.Label(self.root, text="Enter Master Password:").pack()
-        self.password_entry = tk.Entry(self.root, show="*")
-        self.password_entry.pack()
-        tk.Button(self.root, text="Unlock", command=self.verify_master_password).pack()
+        frame = ttk.Frame(self.root, padding=20, style="TFrame")
+        frame.pack(expand=True)
+        
+        ttk.Label(frame, text="Enter Master Password:").pack(pady=10)
+        self.password_entry = ttk.Entry(frame, show="*", font=("Arial", 12))
+        self.password_entry.pack(pady=5)
+        
+        show_password_btn = ttk.Button(frame, text="Show", command=self.toggle_password)
+        show_password_btn.pack(pady=5)
+        
+        ttk.Button(frame, text="Unlock", command=self.verify_master_password).pack(pady=10)
+    
+    def toggle_password(self):
+        if self.password_entry["show"] == "*":
+            self.password_entry["show"] = ""
+        else:
+            self.password_entry["show"] = "*"
     
     def verify_master_password(self):
         password = self.password_entry.get()
@@ -99,8 +119,11 @@ class PasswordManager:
     
     def create_main_screen(self):
         self.clear_screen()
-        tk.Button(self.root, text="Add Password", command=self.add_password).pack()
-        tk.Button(self.root, text="Show Passwords", command=self.show_passwords).pack()
+        frame = ttk.Frame(self.root, padding=20)
+        frame.pack(expand=True)
+        
+        ttk.Button(frame, text="Add Password", command=self.add_password).pack(pady=10)
+        ttk.Button(frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
     
     def add_password(self):
         site = simpledialog.askstring("New Entry", "Website:")
@@ -113,12 +136,16 @@ class PasswordManager:
     
     def show_passwords(self):
         self.clear_screen()
+        frame = ttk.Frame(self.root, padding=20)
+        frame.pack(expand=True)
+        
         for site, creds in self.passwords.items():
-            frame = tk.Frame(self.root)
-            frame.pack()
-            tk.Label(frame, text=f"{site}: {creds['username']}" ).pack(side=tk.LEFT)
-            tk.Button(frame, text="Copy Password", command=lambda p=creds['password']: self.copy_to_clipboard(p)).pack(side=tk.RIGHT)
-        tk.Button(self.root, text="Back", command=self.create_main_screen).pack()
+            sub_frame = ttk.Frame(frame)
+            sub_frame.pack(pady=5, fill=tk.X)
+            ttk.Label(sub_frame, text=f"{site}: {creds['username']}").pack(side=tk.LEFT)
+            ttk.Button(sub_frame, text="Copy Password", command=lambda p=creds['password']: self.copy_to_clipboard(p)).pack(side=tk.RIGHT)
+        
+        ttk.Button(frame, text="Back", command=self.create_main_screen).pack(pady=10)
     
     def copy_to_clipboard(self, text):
         self.root.clipboard_clear()
