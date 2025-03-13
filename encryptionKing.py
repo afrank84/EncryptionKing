@@ -81,37 +81,32 @@ class PasswordManager:
         ttk.Button(self.main_frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
     
     def add_password(self):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Add New Password")
-        dialog.geometry("300x200")
-        
-        ttk.Label(dialog, text="Website:").pack(pady=5)
-        site_entry = ttk.Entry(dialog)
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+
+        ttk.Label(self.main_frame, text="Website:").pack(pady=5)
+        site_entry = ttk.Entry(self.main_frame)
         site_entry.pack(pady=5, fill=tk.X)
 
-        ttk.Label(dialog, text="Username:").pack(pady=5)
-        username_entry = ttk.Entry(dialog)
+        ttk.Label(self.main_frame, text="Username:").pack(pady=5)
+        username_entry = ttk.Entry(self.main_frame)
         username_entry.pack(pady=5, fill=tk.X)
 
-        ttk.Label(dialog, text="Password:").pack(pady=5)
-        password_entry = ttk.Entry(dialog, show="*")
+        ttk.Label(self.main_frame, text="Password:").pack(pady=5)
+        password_entry = ttk.Entry(self.main_frame, show="*")
         password_entry.pack(pady=5, fill=tk.X)
 
-        def save_and_close():
+        def save_password():
             site = site_entry.get()
             username = username_entry.get()
             password = password_entry.get()
             if site and username and password:
                 self.passwords[site] = {"username": username, "password": password}
                 self.save_passwords()
-                self.show_passwords()
-            dialog.destroy()
+                self.show_main_menu()  # Return to main menu after saving
 
-        ttk.Button(dialog, text="Save", command=save_and_close).pack(pady=10)
-
-        dialog.transient(self.root)
-        dialog.grab_set()
-        self.root.wait_window(dialog)
+        ttk.Button(self.main_frame, text="Save", command=save_password).pack(pady=10)
+        ttk.Button(self.main_frame, text="Back", command=self.show_main_menu).pack(pady=10)
 
     
     def show_passwords(self):
