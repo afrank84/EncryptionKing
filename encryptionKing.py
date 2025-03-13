@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import secrets
+from tkinter import PhotoImage
 
 # Constants
 SALT_FILE = "salt.bin"
@@ -49,19 +50,28 @@ class PasswordManager:
             iterations=ITERATIONS,
         )
         return kdf.derive(password.encode())
-    
+
     def create_ui(self):
         self.main_frame = ttk.Frame(self.root, padding=20)
         self.main_frame.pack(expand=True, fill=tk.BOTH)
-        
+
+        # Load and display the logo
+        try:
+            self.logo_image = PhotoImage(file="ek_logo.png")
+            self.logo_label = ttk.Label(self.main_frame, image=self.logo_image)
+            self.logo_label.pack(pady=10)
+        except Exception as e:
+            print("Error loading logo:", e)
+
         self.password_label = ttk.Label(self.main_frame, text="Enter Master Password:")
         self.password_label.pack(pady=10)
-        
+
         self.password_entry = ttk.Entry(self.main_frame, show="*", font=("Arial", 12))
         self.password_entry.pack(pady=5)
-        
+
         self.unlock_button = ttk.Button(self.main_frame, text="Unlock", command=self.verify_master_password)
         self.unlock_button.pack(pady=10)
+
     
     def verify_master_password(self):
         password = self.password_entry.get()
