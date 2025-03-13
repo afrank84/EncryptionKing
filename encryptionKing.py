@@ -19,7 +19,7 @@ class PasswordManager:
     def __init__(self, root):
         self.root = root
         self.root.title("Secure Password Manager")
-        self.root.geometry("400x500")
+        self.root.geometry("600x700")
         self.root.configure(bg="#1e1e1e")  # Dark background
         self.master_password = None
         self.encryption_key = None
@@ -57,7 +57,7 @@ class PasswordManager:
 
         # Load and display the logo
         try:
-            self.logo_image = PhotoImage(file="ek_logo.png")
+            self.logo_image = PhotoImage(file="ek_logo.png").subsample(2, 2)  # Shrink by a factor of 2
             self.logo_label = ttk.Label(self.main_frame, image=self.logo_image)
             self.logo_label.pack(pady=10)
         except Exception as e:
