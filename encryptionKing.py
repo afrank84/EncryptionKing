@@ -123,38 +123,113 @@ class PasswordManager:
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-        # Create Treeview (Table)
-        tree = ttk.Treeview(self.main_frame, columns=("Website", "Username", "Actions"), show="headings")
+        # Load icons (Resized properly)
+        try:
+            self.edit_icon = PhotoImage(file="icons/edit.png").subsample(5, 5)  # Shrink images
+            self.copy_icon = PhotoImage(file="icons/copy.png").subsample(5, 5)
+            self.delete_icon = PhotoImage(file="icons/delete.png").subsample(5, 5)
+        except Exception as e:
+            print("Error loading icons:", e)
+            return
+
+        # Create a frame for the table
+        table_frame = ttk.Frame(self.main_frame)
+        table_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+
+        # Create Treeview (without actions column)
+        tree = ttk.Treeview(table_frame, columns=("Website", "Username"), show="headings", height=10)
         tree.heading("Website", text="Website")
         tree.heading("Username", text="Username")
-        tree.heading("Actions", text="Actions")
-        
-        tree.column("Website", width=150)
-        tree.column("Username", width=100)
-        tree.column("Actions", width=50)
 
-        # Insert data
-        for site, creds in self.passwords.items():
-            tree.insert("", "end", values=(site, creds["username"], "Copy"))
+        tree.column("Website", width=200)
+        tree.column("Username", width=150)
 
-        tree.pack(pady=10, fill=tk.BOTH, expand=True)
+        tree.grid(row=0, column=0, sticky="nsew")
 
-        # Bind click event to copy password
-        def on_item_click(event):
-            selected_item = tree.selection()
-            if selected_item:
-                site = tree.item(selected_item, "values")[0]  # Get website name
-                self.copy_to_clipboard(self.passwords[site]["password"])
+        # Create a canvas for icons next to each row
+        canvas = tk.Canvas(table_frame, width=120, height=300, bg="#1e1e1e", highlightthickness=0)
+        canvas.grid(row=0, column=1, sticky="ns")
 
-        tree.bind("<Double-1>", on_item_click)  # Double-click to copy password
+        # Scrollbars
+        scrollbar_y = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+        scrollbar_y.grid(row=0, column=2, sticky="ns")
 
+        tree.configure(yscrollcommand=scrollbar_y.set)
+
+        # Insert rows into Treeview & create icons next to each row
+        button_refs = {}  # Store references to avoid garbage collection
+        for i, (site, creds) in enumerate(self.passwords.items()):
+            item_id = tree.insert("", "end", values=(site, creds["username"]))
+
+            # Place icons in the canvas, aligned with the rows
+            y_position = 30 + (i * 30)
+
+            edit_button = ttk.Button(table_frame, image=self.edit_icon, command=lambda s=site: self.edit_password(s))
+            copy_button = ttk.Button(table_frame, image=self.copy_icon, command=lambda p=creds["password"]: self.copy_to_clipboard(p))
+            delete_button = ttk.Button(table_frame, image=self.delete_icon, command=lambda s=site: self.delete_password(s))
+
+            # Place buttons on the canvas
+            canvas.create_window(10, y_position, anchor="w", window=edit_button)
+            canvas.create_window(50, y_position, anchor="w", window=copy_button)
+            canvas.create_window(90, y_position, anchor="w", window=delete_button)
+
+            # Store references to avoid garbage collection
+            button_refs[item_id] = (edit_button, copy_button, delete_button)
+
+        # Back button
         ttk.Button(self.main_frame, text="Back", command=self.show_main_menu).pack(pady=10)
+
+
+
+    def edit_password(self, site):
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+
+        ttk.Label(self.main_frame, text="Edit Password Entry").pack(pady=10)
+
+        ttk.Label(self.main_frame, text="Website:").pack(pady=5)
+        site_entry = ttk.Entry(self.main_frame)
+        site_entry.insert(0, site)
+        site_entry.pack(pady=5, fill=tk.X)
+
+        ttk.Label(self.main_frame, text="Username:").pack(pady=5)
+        username_entry = ttk.Entry(self.main_frame)
+        username_entry.insert(0, self.passwords[site]["username"])
+        username_entry.pack(pady=5, fill=tk.X)
+
+        ttk.Label(self.main_frame, text="Password:").pack(pady=5)
+        password_entry = ttk.Entry(self.main_frame, show="*")
+        password_entry.insert(0, self.passwords[site]["password"])
+        password_entry.pack(pady=5, fill=tk.X)
+
+        def save_changes():
+            new_site = site_entry.get()
+            new_username = username_entry.get()
+            new_password = password_entry.get()
+
+            if new_site and new_username and new_password:
+                # Remove old entry if site name changed
+                if new_site != site:
+                    del self.passwords[site]
+
+                self.passwords[new_site] = {"username": new_username, "password": new_password}
+                self.save_passwords()
+                self.show_passwords()  # Return to list after saving
+
+        ttk.Button(self.main_frame, text="Save Changes", command=save_changes).pack(pady=10)
+        ttk.Button(self.main_frame, text="Back", command=self.show_passwords).pack(pady=10)
 
     
     def copy_to_clipboard(self, text):
         self.root.clipboard_clear()
         self.root.clipboard_append(text)
         self.root.update()
+        
+    def delete_password(self, site):
+        del self.passwords[site]
+        self.save_passwords()
+        self.show_passwords()  # Refresh the list
+
     
     def load_passwords(self):
         if not os.path.exists(DATA_FILE):
