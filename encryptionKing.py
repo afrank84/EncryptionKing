@@ -117,14 +117,34 @@ class PasswordManager:
     def show_passwords(self):
         for widget in self.main_frame.winfo_children():
             widget.destroy()
+
+        # Create Treeview (Table)
+        tree = ttk.Treeview(self.main_frame, columns=("Website", "Username", "Actions"), show="headings")
+        tree.heading("Website", text="Website")
+        tree.heading("Username", text="Username")
+        tree.heading("Actions", text="Actions")
         
+        tree.column("Website", width=150)
+        tree.column("Username", width=100)
+        tree.column("Actions", width=50)
+
+        # Insert data
         for site, creds in self.passwords.items():
-            sub_frame = ttk.Frame(self.main_frame)
-            sub_frame.pack(pady=5, fill=tk.X)
-            ttk.Label(sub_frame, text=f"{site}: {creds['username']}").pack(side=tk.LEFT)
-            ttk.Button(sub_frame, text="Copy", command=lambda p=creds['password']: self.copy_to_clipboard(p)).pack(side=tk.RIGHT)
-        
+            tree.insert("", "end", values=(site, creds["username"], "Copy"))
+
+        tree.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        # Bind click event to copy password
+        def on_item_click(event):
+            selected_item = tree.selection()
+            if selected_item:
+                site = tree.item(selected_item, "values")[0]  # Get website name
+                self.copy_to_clipboard(self.passwords[site]["password"])
+
+        tree.bind("<Double-1>", on_item_click)  # Double-click to copy password
+
         ttk.Button(self.main_frame, text="Back", command=self.show_main_menu).pack(pady=10)
+
     
     def copy_to_clipboard(self, text):
         self.root.clipboard_clear()
