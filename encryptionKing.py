@@ -81,13 +81,38 @@ class PasswordManager:
         ttk.Button(self.main_frame, text="Show Passwords", command=self.show_passwords).pack(pady=10)
     
     def add_password(self):
-        site = simpledialog.askstring("New Entry", "Website:")
-        username = simpledialog.askstring("New Entry", "Username:")
-        password = simpledialog.askstring("New Entry", "Password:")
-        if site and username and password:
-            self.passwords[site] = {"username": username, "password": password}
-            self.save_passwords()
-            self.show_passwords()
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Add New Password")
+        dialog.geometry("300x200")
+        
+        ttk.Label(dialog, text="Website:").pack(pady=5)
+        site_entry = ttk.Entry(dialog)
+        site_entry.pack(pady=5, fill=tk.X)
+
+        ttk.Label(dialog, text="Username:").pack(pady=5)
+        username_entry = ttk.Entry(dialog)
+        username_entry.pack(pady=5, fill=tk.X)
+
+        ttk.Label(dialog, text="Password:").pack(pady=5)
+        password_entry = ttk.Entry(dialog, show="*")
+        password_entry.pack(pady=5, fill=tk.X)
+
+        def save_and_close():
+            site = site_entry.get()
+            username = username_entry.get()
+            password = password_entry.get()
+            if site and username and password:
+                self.passwords[site] = {"username": username, "password": password}
+                self.save_passwords()
+                self.show_passwords()
+            dialog.destroy()
+
+        ttk.Button(dialog, text="Save", command=save_and_close).pack(pady=10)
+
+        dialog.transient(self.root)
+        dialog.grab_set()
+        self.root.wait_window(dialog)
+
     
     def show_passwords(self):
         for widget in self.main_frame.winfo_children():
