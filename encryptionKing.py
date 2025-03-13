@@ -123,20 +123,11 @@ class PasswordManager:
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-        # Load icons (Resized properly)
-        try:
-            self.edit_icon = PhotoImage(file="icons/edit.png").subsample(5, 5)  # Shrink images
-            self.copy_icon = PhotoImage(file="icons/copy.png").subsample(5, 5)
-            self.delete_icon = PhotoImage(file="icons/delete.png").subsample(5, 5)
-        except Exception as e:
-            print("Error loading icons:", e)
-            return
-
         # Create a frame for the table
         table_frame = ttk.Frame(self.main_frame)
         table_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
-        # Create Treeview (without actions column)
+        # Create Treeview (WITHOUT "Actions" column)
         tree = ttk.Treeview(table_frame, columns=("Website", "Username"), show="headings", height=10)
         tree.heading("Website", text="Website")
         tree.heading("Username", text="Username")
@@ -146,37 +137,34 @@ class PasswordManager:
 
         tree.grid(row=0, column=0, sticky="nsew")
 
-        # Create a canvas for icons next to each row
-        canvas = tk.Canvas(table_frame, width=120, height=300, bg="#1e1e1e", highlightthickness=0)
-        canvas.grid(row=0, column=1, sticky="ns")
-
-        # Scrollbars
+        # Scrollbar
         scrollbar_y = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        scrollbar_y.grid(row=0, column=2, sticky="ns")
-
+        scrollbar_y.grid(row=0, column=1, sticky="ns")
         tree.configure(yscrollcommand=scrollbar_y.set)
 
-        # Insert rows into Treeview & create icons next to each row
-        button_refs = {}  # Store references to avoid garbage collection
+        # **NEW**: Dictionary to store row-button mappings
+        button_refs = {}
+
+        # Insert rows & dynamically create buttons per row
         for i, (site, creds) in enumerate(self.passwords.items()):
             item_id = tree.insert("", "end", values=(site, creds["username"]))
 
-            # Place icons in the canvas, aligned with the rows
-            y_position = 30 + (i * 30)
+            # Create a new row-specific button frame
+            row_frame = ttk.Frame(self.main_frame)
+            row_frame.pack(fill=tk.X, pady=2)
 
-            edit_button = ttk.Button(table_frame, image=self.edit_icon, command=lambda s=site: self.edit_password(s))
-            copy_button = ttk.Button(table_frame, image=self.copy_icon, command=lambda p=creds["password"]: self.copy_to_clipboard(p))
-            delete_button = ttk.Button(table_frame, image=self.delete_icon, command=lambda s=site: self.delete_password(s))
+            edit_btn = ttk.Button(row_frame, text="Edit", command=lambda s=site: self.edit_password(s))
+            copy_btn = ttk.Button(row_frame, text="Copy", command=lambda p=creds["password"]: self.copy_to_clipboard(p))
+            delete_btn = ttk.Button(row_frame, text="Delete", command=lambda s=site: self.delete_password(s))
 
-            # Place buttons on the canvas
-            canvas.create_window(10, y_position, anchor="w", window=edit_button)
-            canvas.create_window(50, y_position, anchor="w", window=copy_button)
-            canvas.create_window(90, y_position, anchor="w", window=delete_button)
+            edit_btn.pack(side=tk.LEFT, padx=5)
+            copy_btn.pack(side=tk.LEFT, padx=5)
+            delete_btn.pack(side=tk.LEFT, padx=5)
 
-            # Store references to avoid garbage collection
-            button_refs[item_id] = (edit_button, copy_button, delete_button)
+            # Store references to prevent garbage collection
+            button_refs[item_id] = row_frame
 
-        # Back button
+        # Back button (keeps functionality)
         ttk.Button(self.main_frame, text="Back", command=self.show_main_menu).pack(pady=10)
 
 
